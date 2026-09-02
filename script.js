@@ -9,6 +9,16 @@ const fallbackData = [
 ];
 let screenshotData = [...fallbackData];
 
+// ===== MUSKU BUGS DATA - yaha bugs edit karo (user bolega tab update karna) =====
+const muskuBugs = [
+  { id: 'BUG-001', title: 'Chat profile me S2 show hota hai', desc: 'Chat section me profile name/avatar me hamesha "S2" dikhta hai, chahe dusra user ho. Profile mapping ka issue hai.', severity: 'major', status: 'open', date: '2026-05-02' },
+  { id: 'BUG-002', title: 'Color auto changes', desc: 'Theme / accent color apne aap change ho jata hai, bina user ke select kiye. Random gradient switch hota hai.', severity: 'major', status: 'open', date: '2026-05-02' },
+  { id: 'BUG-003', title: 'Mobile lag problem', desc: 'Mobile device pe scrolling aur carousel me lag / jank feel hota hai, specially low-end phones pe.', severity: 'critical', status: 'open', date: '2026-05-02' },
+  { id: 'BUG-004', title: 'Mobile live connection issue', desc: 'Mobile pe live connection kabhi-kabhi disconnect ho jata hai, reconnect karna padta hai. Network stable hone par bhi hota hai.', severity: 'critical', status: 'open', date: '2026-05-02' },
+  { id: 'BUG-005', title: 'Some more issues', desc: 'Chhote-mote UI glitches, spacing aur animation me kabhi-kabhi flicker. Full audit ke baad fix kiya jayega.', severity: 'minor', status: 'open', date: '2026-05-02' }
+];
+// severity: 'critical' | 'major' | 'minor' | 'fixed'
+
 function getCounts(idx) {
   function rand15to29() { return 15 + Math.floor(Math.random() * 15); }
   try {
@@ -478,18 +488,21 @@ document.getElementById('mobileCarousel').addEventListener('mousemove', (e) => {
   mobileTrack.style.transform = `translateX(calc(-${mobileCurrentSlide * 100}% - ${walk}px))`;
 });
 
-// Musk Button Ripple
-document.getElementById('muskBtn').addEventListener('click', function (e) {
-  const rect = this.getBoundingClientRect();
-  const ripple = document.createElement('span');
-  ripple.className = 'ripple';
-  const size = Math.max(rect.width, rect.height);
-  ripple.style.width = ripple.style.height = size + 'px';
-  ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
-  ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
-  this.appendChild(ripple);
-  setTimeout(() => ripple.remove(), 600);
-});
+// Musk Button Ripple (removed with TRY MUSKU button - safe guard)
+const muskBtnEl = document.getElementById('muskBtn');
+if (muskBtnEl) {
+  muskBtnEl.addEventListener('click', function (e) {
+    const rect = this.getBoundingClientRect();
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    const size = Math.max(rect.width, rect.height);
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+    ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+    this.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+  });
+}
 
 // Header scroll
 window.addEventListener('scroll', () => {
@@ -550,6 +563,92 @@ if (grassCard) {
   grassCard.addEventListener('mouseenter', () => clearInterval(autoPlayInterval));
   grassCard.addEventListener('mouseleave', () => startAutoPlay());
 }
+
+// ===== BUG MODAL LOGIC =====
+function sevClass(s) {
+  if (s === 'critical') return 'sev-critical';
+  if (s === 'major') return 'sev-major';
+  if (s === 'fixed') return 'sev-fixed';
+  return 'sev-minor';
+}
+function sevLabel(s) {
+  if (s === 'critical') return 'Critical';
+  if (s === 'major') return 'Major';
+  if (s === 'fixed') return 'Fixed';
+  return 'Minor';
+}
+function bugAccent(sev) {
+  if (sev === 'critical') return '#ff003c';
+  if (sev === 'major') return '#ff9800';
+  if (sev === 'fixed') return '#7b2ff7';
+  return '#00e676';
+}
+function renderBugList() {
+  const list = document.getElementById('bugList');
+  const badge = document.getElementById('bugCountBadge');
+  const total = document.getElementById('bugTotalCount');
+  if (!list) return;
+  const count = muskuBugs.length;
+  if (badge) badge.textContent = count;
+  if (total) total.textContent = count === 0 ? 'No bugs' : count + (count === 1 ? ' bug' : ' bugs');
+  if (count === 0) {
+    list.innerHTML = '<div class="bug-empty"><i class="fas fa-check-circle" style="font-size:28px; color:#00e676; display:block; margin-bottom:10px;"></i> Koi bug nahi! Sab clean hai.</div>';
+    return;
+  }
+  list.innerHTML = muskuBugs.map(b => {
+    const accent = bugAccent(b.severity);
+    return `<div class="bug-item" style="--bug-accent:${accent}; --bug-accent-bg:${accent}18; --bug-accent-border:${accent}30">
+      <div class="bug-item-head">
+        <span class="bug-item-id">${b.id}</span>
+        <span class="bug-item-severity ${sevClass(b.severity)}">${sevLabel(b.severity)}</span>
+      </div>
+      <div class="bug-item-title">${b.title}</div>
+      <div class="bug-item-desc">${b.desc}</div>
+      <div class="bug-item-meta">
+        <span><i class="fas fa-calendar-alt"></i> ${b.date}</span>
+        <span><i class="fas fa-info-circle"></i> ${b.status}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+function openBugModal() {
+  renderBugList();
+  const m = document.getElementById('bugModal');
+  if (m) { m.classList.add('open'); document.body.style.overflow = 'hidden'; clearInterval(autoPlayInterval); }
+}
+function closeBugModal() {
+  const m = document.getElementById('bugModal');
+  if (m) m.classList.remove('open');
+  const imgM = document.getElementById('imgModal');
+  if (!navLinks || !navLinks.classList.contains('active')) {
+    if (!imgM || !imgM.classList.contains('open')) document.body.style.overflow = '';
+  }
+  startAutoPlay();
+}
+
+function initBugModal() {
+  renderBugList();
+  const bugBtn = document.getElementById('muskuBugBtn');
+  const bugModal = document.getElementById('bugModal');
+  const bugBackdrop = document.getElementById('bugModalBackdrop');
+  const bugClose = document.getElementById('bugModalClose');
+  const bugOk = document.getElementById('bugModalOk');
+  if (bugBtn && !bugBtn._bugBound) { bugBtn.addEventListener('click', openBugModal); bugBtn._bugBound = true; }
+  if (bugBackdrop && !bugBackdrop._bugBound) { bugBackdrop.addEventListener('click', closeBugModal); bugBackdrop._bugBound = true; }
+  if (bugClose && !bugClose._bugBound) { bugClose.addEventListener('click', closeBugModal); bugClose._bugBound = true; }
+  if (bugOk && !bugOk._bugBound) { bugOk.addEventListener('click', closeBugModal); bugOk._bugBound = true; }
+  if (bugModal && !bugModal._bugBound) { bugModal.addEventListener('click', (e) => { if (e.target.id === 'bugModal') closeBugModal(); }); bugModal._bugBound = true; }
+}
+document.addEventListener('DOMContentLoaded', initBugModal);
+if (document.readyState !== 'loading') initBugModal();
+else setTimeout(initBugModal, 0);
+// Escape for bug modal (global)
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const bm = document.getElementById('bugModal');
+    if (bm && bm.classList.contains('open')) closeBugModal();
+  }
+});
 
 // Modal events
 document.getElementById('imgModalBackdrop').addEventListener('click', closeModal);
